@@ -29,11 +29,11 @@
       onSnapshot,
       getDocs,
       doc,
-      writeBatch,
-      setDoc
+      deleteDoc,
+      writeBatch
     } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
-
-    // ---------- FIREBASE CONFIG ----------
+    
+    /* ---------- FIREBASE CONFIG ---------- */
     const firebaseConfig = {
       apiKey: "AIzaSyCCJqmgiZ2hQXPk5Ww7_6zZFJx1pcI5DDg",
       authDomain: "kerux-668cb.firebaseapp.com",
@@ -42,159 +42,123 @@
       messagingSenderId: "1003479552994",
       appId: "1:1003479552994:web:d7567e35b7cce8a6381fbb"
     };
+    
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    // ---------- DEVICE ID ----------
+    
+    /* ---------- DEVICE ID ---------- */
     let deviceId = localStorage.getItem("deviceId");
     if (!deviceId) {
       deviceId = crypto.randomUUID();
       localStorage.setItem("deviceId", deviceId);
     }
-
-    // ---------- USERNAME ----------
-    let username = localStorage.getItem("username") || "";
-    const usernameInput = document.createElement("input");
-    usernameInput.type = "text";
-    usernameInput.placeholder = "Enter your name";
-    usernameInput.value = username;
-    usernameInput.style.marginBottom = "10px";
-    usernameInput.style.width = "90%";
-    usernameInput.style.maxWidth = "400px";
-    usernameInput.style.padding = "8px";
-    usernameInput.style.borderRadius = "20px";
-    usernameInput.style.border = "1px solid #ccc";
-    document.querySelector(".web-app").prepend(usernameInput);
-
-    usernameInput.addEventListener("input", () => {
-      username = usernameInput.value.trim();
-      localStorage.setItem("username", username);
-    });
-
-    // ---------- DOM ELEMENTS ----------
+    
+    /* ---------- DOM ELEMENTS ---------- */
     const form = document.querySelector(".chat-input");
     const input = form.querySelector("input[type='text']");
     const imageInput = form.querySelector("input[type='file']");
     const chatBox = document.querySelector(".chat-messages");
-
-    // ---------- MAX MESSAGES CAP ----------
+    
+    /* ---------- MAX MESSAGES CAP ---------- */
     const MAX_MESSAGES = 25;
+    
     async function enforceMessageCap() {
       const messagesRef = collection(db, "messages");
-      const q = query(messagesRef, orderBy("timestamp", "asc"));
+      const q = query(messagesRef, orderBy("timestamp", "asc")); // oldest first
       const snapshot = await getDocs(q);
+    
       if (snapshot.size > MAX_MESSAGES) {
         const excess = snapshot.size - MAX_MESSAGES;
         const docsToDelete = snapshot.docs.slice(0, excess);
         const batch = writeBatch(db);
-        docsToDelete.forEach((d) => batch.delete(doc(db, "messages", d.id)));
+    
+        docsToDelete.forEach((docToDelete) => batch.delete(doc(db, "messages", docToDelete.id)));
         await batch.commit();
       }
     }
-
-    // ---------- SEND MESSAGE ----------
+    
+    /* ---------- SEND MESSAGE ---------- */
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+    
       const text = input.value.trim();
       const file = imageInput.files[0];
+    
       if (!text && !file) return;
-
-      const senderName = username || deviceId;
+    
       let imageBase64 = null;
-      let isGif = false;
-
-      // Detect image/GIF URLs
-      if (text && text.match(/\.(gif|webp|png|jpg|jpeg)$/i)) isGif = true;
-
-      // Function to send message to Firestore
-      async function sendMessage({ text=null, image=null, gif=null, sender }) {
-        await addDoc(collection(db, "messages"), {
-          text,
-          image,
-          gif,
-          sender,
-          timestamp: Date.now()
-        });
-        await enforceMessageCap();
-      }
-
-      // Handle file uploads
+    
       if (file) {
         const reader = new FileReader();
         reader.onload = async () => {
-          imageBase64 = reader.result;
-          await sendMessage({
-            text: !isGif ? text || null : null,
+          imageBase64 = reader.result; // Base64 string
+    
+          await addDoc(collection(db, "messages"), {
+            text: text || null,
             image: imageBase64,
-            gif: isGif ? text : null,
-            sender: senderName
+            sender: deviceId,
+            timestamp: Date.now()
           });
+    
+          input.value = "";
+          imageInput.value = "";
+    
+          await enforceMessageCap(); // enforce max messages
         };
         reader.readAsDataURL(file);
       } else {
-        await sendMessage({
-          text: !isGif ? text || null : null,
+        await addDoc(collection(db, "messages"), {
+          text: text,
           image: null,
-          gif: isGif ? text : null,
-          sender: senderName
+          sender: deviceId,
+          timestamp: Date.now()
         });
+    
+        input.value = "";
+    
+        await enforceMessageCap(); // enforce max messages
       }
-
-    // ---------- RECEIVE MESSAGES ----------
-    const messagesQuery = query(collection(db, "messages"), orderBy("timestamp"));
-    onSnapshot(messagesQuery, (snapshot) => {
+    });
+    
+    /* ---------- RECEIVE MESSAGES ---------- */
+    const q = query(collection(db, "messages"), orderBy("timestamp"));
+    
+    onSnapshot(q, (snapshot) => {
       chatBox.innerHTML = "";
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
+    
+      snapshot.forEach((doc) => {
+        const data = doc.data();
         const div = document.createElement("div");
-        div.className = data.sender === (username || deviceId)
-          ? "message-sent"
-          : "message-recieved";
-
-        // Sender name
-        if (data.sender) {
-          const nameEl = document.createElement("small");
-          nameEl.textContent = data.sender;
-          nameEl.style.display = "block";
-          nameEl.style.fontSize = "0.8rem";
-          nameEl.style.color = "black";
-          div.appendChild(nameEl);
-        }
-
+    
+        div.className =
+          data.sender === deviceId
+            ? "message-sent"
+            : "message-recieved";
+    
         // Text
         if (data.text) {
           const p = document.createElement("p");
           p.textContent = data.text;
           div.appendChild(p);
         }
-
+    
         // Image
         if (data.image) {
           const img = document.createElement("img");
-          img.src = data.image;
+          img.src = data.image; // Base64 string
           img.style.maxWidth = "220px";
           img.style.borderRadius = "14px";
           img.style.display = "block";
           img.style.marginTop = "6px";
           div.appendChild(img);
         }
-
-        // GIF
-        if (data.gif) {
-          const gifEl = document.createElement("img");
-          gifEl.src = data.gif;
-          gifEl.style.maxWidth = "220px";
-          gifEl.style.borderRadius = "14px";
-          gifEl.style.display = "block";
-          gifEl.style.marginTop = "6px";
-          div.appendChild(gifEl);
-        }
-
+    
         chatBox.appendChild(div);
       });
-
+    
       chatBox.scrollTop = chatBox.scrollHeight;
     });
+
   </script>
 </body>
 </html>
