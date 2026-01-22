@@ -92,15 +92,6 @@
       }
     }
 
-    // ---------- INIT LOCAL AI ----------
-    async function initAI() {
-      const { pipeline } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.4.0/dist/transformers.min.js");
-      window.aiPipeline = await pipeline("text-generation", "Xenova/gpt2");
-      console.log("TinyBot ready!");
-    }
-
-    await initAI();
-
     // ---------- SEND MESSAGE ----------
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -148,35 +139,6 @@
           sender: senderName
         });
       }
-
-      // ---------- TinyBot ----------
-      if (text.includes("@bot") && senderName !== "TinyBot") {
-        // show thinking placeholder
-        const tempDocRef = await addDoc(collection(db, "messages"), {
-          text: "TinyBot is thinking...",
-          image: null,
-          gif: null,
-          sender: "TinyBot",
-          timestamp: Date.now()
-        });
-
-        const prompt = text.replace("@bot", "").trim();
-        const aiResponse = await window.aiPipeline(prompt, { max_length: 50 });
-        const aiText = aiResponse[0].generated_text;
-
-        // replace placeholder with actual response
-        await setDoc(tempDocRef, {
-          text: aiText,
-          image: null,
-          gif: null,
-          sender: "TinyBot",
-          timestamp: Date.now()
-        });
-      }
-
-      input.value = "";
-      imageInput.value = "";
-    });
 
     // ---------- RECEIVE MESSAGES ----------
     const messagesQuery = query(collection(db, "messages"), orderBy("timestamp"));
