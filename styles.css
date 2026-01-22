@@ -35,7 +35,7 @@ body{
   align-self: flex-end;       
   word-wrap: break-word;       
 }
-.message-recieved {
+.message-received {
   background-color: #E5E5EA;
   color: black;
   padding: 2px 20px;
