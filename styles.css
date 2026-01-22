@@ -1,60 +1,98 @@
-body{
-  padding: 25px;
+body {
+  padding: 10px;
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
 }
+
 .title {
-	color: #5C6AC4;
+  color: #5C6AC4;
+  font-size: 1.8rem;
 }
+
+.web-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px; /* limits size on large screens */
+  margin: auto;
+}
+
 .chat-messages {
   border: 2px solid #5C6AC4;
-  width: 400px;
-  height: 400px;
+  width: 90%;           /* responsive width */
+  max-width: 400px;     /* won't get bigger than 400px */
+  height: 60vh;         /* responsive height relative to viewport */
+  min-height: 300px;    /* minimum for very small screens */
   padding: 10px;
-  margin: auto;
+  margin: 10px 0;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-  background-color: #FFFDF5;
+
+  display: flex;
+  flex-direction: column;
 }
+
 .chat-input {
   display: flex;
+  flex-wrap: wrap;      /* wrap on small screens */
   justify-content: center;
   align-items: center;
+  gap: 5px;             /* space between inputs and button */
+  width: 90%;
+  max-width: 400px;
+  margin: auto;
 }
-.app-title {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+
+.chat-input input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 150px;     /* don't shrink too small */
+  padding: 8px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
 }
+
+.chat-input input[type="file"] {
+  flex: 0 0 auto;
+}
+
+.chat-input button {
+  padding: 8px 15px;
+  border-radius: 20px;
+  border: none;
+  background-color: #5C6AC4;
+  color: white;
+  cursor: pointer;
+}
+
+.message-sent, .message-recieved {
+  padding: 5px 15px;
+  border-radius: 20px;
+  margin: 5px 0;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+
 .message-sent {
   background-color: #5C6AC4;
   color: white;
-  padding: 2px 20px;
-  border-radius: 20px;
-  margin: 5px 0;
-  max-width: 70%;
-  align-self: flex-end;       
-  word-wrap: break-word;       
+  align-self: flex-end;
 }
-.message-received {
+
+.message-recieved {
   background-color: #E5E5EA;
   color: black;
-  padding: 2px 20px;
-  border-radius: 20px;
-  margin: 5px 0;
-  max-width: 70%;
-  align-self: flex-start; 
-  word-wrap: break-word;
+  align-self: flex-start;
 }
-.chat-messages {
-  border: 2px solid #5C6AC4;
-  width: 400px;
-  height: 400px;
-  padding: 10px;
-  margin: auto;
-  overflow-y: auto;
-  overflow-x: hidden;
-  box-sizing: border-box;
-  
-  display: flex;
-  flex-direction: column;
+
+/* Optional: make input & chat messages scale on very small devices */
+@media (max-width: 400px) {
+  .chat-input input[type="text"] {
+    min-width: 100px;
+  }
+  .chat-messages {
+    height: 50vh;
+  }
 }
