@@ -1,119 +1,60 @@
-body {
-  padding: 10px;
-  margin: 0;
-  font-family: sans-serif;
-  background-color: #f9f9f9;
+body{
+  padding: 25px;
 }
-
 .title {
-  color: #5C6AC4;
-  font-size: 1.8rem;
+	color: #5C6AC4;
 }
-
-.web-app {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 600px; /* limits size on large screens */
-  margin: auto;
-}
-
 .chat-messages {
   border: 2px solid #5C6AC4;
-  width: 90%;           /* responsive width */
-  max-width: 400px;     /* won't get bigger than 400px */
-  height: 60vh;         /* responsive height relative to viewport */
-  min-height: 300px;    /* minimum for very small screens */
+  width: 400px;
+  height: 400px;
   padding: 10px;
-  margin: 10px 0;
+  margin: auto;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-
-  display: flex;
-  flex-direction: column;
+  background-color: #FFFDF5;
 }
-
 .chat-input {
   display: flex;
-  flex-wrap: wrap;      /* wrap on small screens */
   justify-content: center;
   align-items: center;
-  gap: 5px;             /* space between inputs and button */
-  width: 90%;
-  max-width: 400px;
-  margin: auto;
 }
-
-.chat-input input[type="text"] {
-  flex: 1 1 auto;
-  min-width: 150px;     /* don't shrink too small */
-  padding: 8px;
-  border-radius: 20px;
-  border: 1px solid #ccc;
+.app-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-
-.chat-input input[type="file"] {
-  flex: 0 0 auto;
-}
-
-.chat-input button {
-  padding: 8px 15px;
-  border-radius: 20px;
-  border: none;
-  background-color: #5C6AC4;
-  color: white;
-  cursor: pointer;
-}
-
-.message-sent, .message-recieved {
-  padding: 5px 15px;
-  border-radius: 20px;
-  margin: 5px 0;
-  max-width: 70%;
-  word-wrap: break-word;
-}
-
 .message-sent {
   background-color: #5C6AC4;
   color: white;
-  align-self: flex-end;
+  padding: 2px 20px;
+  border-radius: 20px;
+  margin: 5px 0;
+  max-width: 70%;
+  align-self: flex-end;       
+  word-wrap: break-word;       
 }
-
 .message-recieved {
   background-color: #E5E5EA;
   color: black;
-  align-self: flex-start;
+  padding: 2px 20px;
+  border-radius: 20px;
+  margin: 5px 0;
+  max-width: 70%;
+  align-self: flex-start; 
+  word-wrap: break-word;
 }
-
-/* Optional: make input & chat messages scale on very small devices */
-@media (max-width: 400px) {
-  .chat-input input[type="text"] {
-    min-width: 100px;
-  }
-  .chat-messages {
-    height: 50vh;
-  }
-}
-/* Sender name above messages */
-.message-sent small,
-.message-recieved small {
-  display: block;
-  font-size: 0.75rem;       /* small but readable */
-  font-weight: 600;
-  color: #000000;              /* subtle gray */
-  margin-bottom: px;
-  max-width: 100%;          /* never overflows bubble */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;  /* truncate long names */
-}
-
-/* Optional: wrap long names instead of truncating */
-.message-sent small.wrap,
-.message-recieved small.wrap {
-  white-space: normal;      /* allow wrapping */
-  overflow: visible;
-  text-overflow: unset;
+.chat-messages {
+  border: 2px solid #5C6AC4;
+  width: 400px;
+  height: 400px;
+  padding: 10px;
+  margin: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  
+  display: flex;
+  flex-direction: column;
 }
