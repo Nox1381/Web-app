@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>kɛ.rʌks</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="web-app">
+    <div class="app-title">
+      <h1 class="title">kɛ.rʌks</h1>
+    </div>
+    <div class="chat-messages"></div>
+    <form class="chat-input">
+      <input type="text" placeholder="Type your text here">
+      <input type="file" accept="image/*">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      onSnapshot,
+      getDocs,
+      doc,
+      writeBatch,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+    // ---------- FIREBASE CONFIG ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCJqmgiZ2hQXPk5Ww7_6zZFJx1pcI5DDg",
+      authDomain: "kerux-668cb.firebaseapp.com",
+      projectId: "kerux-668cb",
+      storageBucket: "kerux-668cb.firebasestorage.app",
+      messagingSenderId: "1003479552994",
+      appId: "1:1003479552994:web:d7567e35b7cce8a6381fbb"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ---------- DEVICE ID ----------
+    let deviceId = localStorage.getItem("deviceId");
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem("deviceId", deviceId);
+    }
+
+    // ---------- USERNAME ----------
+    let username = localStorage.getItem("username") || "";
+    const usernameInput = document.createElement("input");
+    usernameInput.type = "text";
+    usernameInput.placeholder = "Enter your name";
+    usernameInput.value = username;
+    usernameInput.style.marginBottom = "10px";
+    usernameInput.style.width = "90%";
+    usernameInput.style.maxWidth = "400px";
+    usernameInput.style.padding = "8px";
+    usernameInput.style.borderRadius = "20px";
+    usernameInput.style.border = "1px solid #ccc";
+    document.querySelector(".web-app").prepend(usernameInput);
+
+    usernameInput.addEventListener("input", () => {
+      username = usernameInput.value.trim();
+      localStorage.setItem("username", username);
+    });
+
+    // ---------- DOM ELEMENTS ----------
+    const form = document.querySelector(".chat-input");
+    const input = form.querySelector("input[type='text']");
+    const imageInput = form.querySelector("input[type='file']");
+    const chatBox = document.querySelector(".chat-messages");
+
+    // ---------- MAX MESSAGES CAP ----------
+    const MAX_MESSAGES = 25;
+    async function enforceMessageCap() {
+      const messagesRef = collection(db, "messages");
+      const q = query(messagesRef, orderBy("timestamp", "asc"));
+      const snapshot = await getDocs(q);
+      if (snapshot.size > MAX_MESSAGES) {
+        const excess = snapshot.size - MAX_MESSAGES;
+        const docsToDelete = snapshot.docs.slice(0, excess);
+        const batch = writeBatch(db);
+        docsToDelete.forEach((d) => batch.delete(doc(db, "messages", d.id)));
+        await batch.commit();
+      }
+    }
+
+    // ---------- INIT LOCAL AI ----------
+    async function initAI() {
+      const { pipeline } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.4.0/dist/transformers.min.js");
+      window.aiPipeline = await pipeline("text-generation", "Xenova/gpt2");
+      console.log("TinyBot ready!");
+    }
+
+    await initAI();
+
+    // ---------- SEND MESSAGE ----------
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      const file = imageInput.files[0];
+      if (!text && !file) return;
+
+      const senderName = username || deviceId;
+      let imageBase64 = null;
+      let isGif = false;
+
+      // Detect image/GIF URLs
+      if (text && text.match(/\.(gif|webp|png|jpg|jpeg)$/i)) isGif = true;
+
+      // Function to send message to Firestore
+      async function sendMessage({ text=null, image=null, gif=null, sender }) {
+        await addDoc(collection(db, "messages"), {
+          text,
+          image,
+          gif,
+          sender,
+          timestamp: Date.now()
+        });
+        await enforceMessageCap();
+      }
+
+      // Handle file uploads
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          imageBase64 = reader.result;
+          await sendMessage({
+            text: !isGif ? text || null : null,
+            image: imageBase64,
+            gif: isGif ? text : null,
+            sender: senderName
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        await sendMessage({
+          text: !isGif ? text || null : null,
+          image: null,
+          gif: isGif ? text : null,
+          sender: senderName
+        });
+      }
+
+      // ---------- TinyBot ----------
+      if (text.includes("@bot") && senderName !== "TinyBot") {
+        // show thinking placeholder
+        const tempDocRef = await addDoc(collection(db, "messages"), {
+          text: "TinyBot is thinking...",
+          image: null,
+          gif: null,
+          sender: "TinyBot",
+          timestamp: Date.now()
+        });
+
+        const prompt = text.replace("@bot", "").trim();
+        const aiResponse = await window.aiPipeline(prompt, { max_length: 50 });
+        const aiText = aiResponse[0].generated_text;
+
+        // replace placeholder with actual response
+        await setDoc(tempDocRef, {
+          text: aiText,
+          image: null,
+          gif: null,
+          sender: "TinyBot",
+          timestamp: Date.now()
+        });
+      }
+
+      input.value = "";
+      imageInput.value = "";
+    });
+
+    // ---------- RECEIVE MESSAGES ----------
+    const messagesQuery = query(collection(db, "messages"), orderBy("timestamp"));
+    onSnapshot(messagesQuery, (snapshot) => {
+      chatBox.innerHTML = "";
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const div = document.createElement("div");
+        div.className = data.sender === (username || deviceId)
+          ? "message-sent"
+          : "message-recieved";
+
+        // Sender name
+        if (data.sender) {
+          const nameEl = document.createElement("small");
+          nameEl.textContent = data.sender;
+          nameEl.style.display = "block";
+          nameEl.style.fontSize = "0.8rem";
+          nameEl.style.color = "black";
+          div.appendChild(nameEl);
+        }
+
+        // Text
+        if (data.text) {
+          const p = document.createElement("p");
+          p.textContent = data.text;
+          div.appendChild(p);
+        }
+
+        // Image
+        if (data.image) {
+          const img = document.createElement("img");
+          img.src = data.image;
+          img.style.maxWidth = "220px";
+          img.style.borderRadius = "14px";
+          img.style.display = "block";
+          img.style.marginTop = "6px";
+          div.appendChild(img);
+        }
+
+        // GIF
+        if (data.gif) {
+          const gifEl = document.createElement("img");
+          gifEl.src = data.gif;
+          gifEl.style.maxWidth = "220px";
+          gifEl.style.borderRadius = "14px";
+          gifEl.style.display = "block";
+          gifEl.style.marginTop = "6px";
+          div.appendChild(gifEl);
+        }
+
+        chatBox.appendChild(div);
+      });
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script>
+</body>
+</html>
