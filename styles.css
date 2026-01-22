@@ -1,1 +1,107 @@
+body {
+  padding: 16px;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
+.title {
+  color: #5C6AC4;
+}
+
+/* ---------- APP LAYOUT ---------- */
+.web-app {
+  max-width: 500px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ---------- TITLE ---------- */
+.app-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* ---------- CHAT AREA ---------- */
+.chat-messages {
+  flex: 1;
+  border: 2px solid #5C6AC4;
+  padding: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  background-color: #FFFDF5;
+
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+}
+
+/* ---------- INPUT AREA ---------- */
+.chat-input {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chat-input input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  font-size: 16px; /* prevents iOS zoom */
+}
+
+.chat-input input[type="file"] {
+  max-width: 120px;
+}
+
+.chat-input button {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  background-color: #5C6AC4;
+  color: white;
+  font-size: 16px;
+}
+
+/* ---------- MESSAGES ---------- */
+.message-sent {
+  background-color: #5C6AC4;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 18px;
+  margin: 4px 0;
+  max-width: 75%;
+  align-self: flex-end;
+  word-wrap: break-word;
+}
+
+.message-received {
+  background-color: #E5E5EA;
+  color: black;
+  padding: 8px 14px;
+  border-radius: 18px;
+  margin: 4px 0;
+  max-width: 75%;
+  align-self: flex-start;
+  word-wrap: break-word;
+}
+
+/* ---------- SMALL SCREENS ---------- */
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 1.4rem;
+  }
+
+  .chat-input input[type="file"] {
+    max-width: 90px;
+  }
+}
