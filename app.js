@@ -40,6 +40,52 @@ const chatBox = document.querySelector(".chat-messages");
 /* ---------- MAX MESSAGES ---------- */
 const MAX_MESSAGES = 25;
 
+/* ---------- IMAGE COMPRESSION ---------- */
+function compressImage(
+  file,
+  { maxWidth = 800, maxHeight = 800, quality = 0.7 } = {}
+) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      img.src = reader.result;
+    };
+
+    img.onload = () => {
+      let { width, height } = img;
+
+      // Keep aspect ratio
+      const scale = Math.min(
+        maxWidth / width,
+        maxHeight / height,
+        1
+      );
+
+      width = Math.floor(width * scale);
+      height = Math.floor(height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const compressedBase64 = canvas.toDataURL(
+        "image/jpeg",
+        quality
+      );
+
+      resolve(compressedBase64);
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 /* ---------- ENFORCE MESSAGE CAP ---------- */
 async function enforceMessageCap() {
   const messagesRef = collection(db, "messages");
@@ -68,31 +114,30 @@ form.addEventListener("submit", async (e) => {
 
   if (!text && !file) return;
 
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      await addDoc(collection(db, "messages"), {
-        text: text || null,
-        image: reader.result,
-        sender: deviceId,
-        timestamp: Date.now()
-      });
+  try {
+    let imageBase64 = null;
 
-      input.value = "";
-      imageInput.value = "";
-      await enforceMessageCap();
-    };
-    reader.readAsDataURL(file);
-  } else {
+    if (file) {
+      imageBase64 = await compressImage(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.7
+      });
+    }
+
     await addDoc(collection(db, "messages"), {
-      text,
-      image: null,
+      text: text || null,
+      image: imageBase64,
       sender: deviceId,
       timestamp: Date.now()
     });
 
     input.value = "";
+    imageInput.value = "";
+
     await enforceMessageCap();
+  } catch (err) {
+    console.error("Message send failed:", err);
   }
 });
 
@@ -123,6 +168,7 @@ onSnapshot(q, (snapshot) => {
       img.style.maxWidth = "220px";
       img.style.borderRadius = "14px";
       img.style.marginTop = "6px";
+      img.loading = "lazy";
       div.appendChild(img);
     }
 
